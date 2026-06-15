@@ -144,74 +144,47 @@ function drawRoundRect(x, y, w, h, r, fill, stroke) {
 function drawTile(r, c, value, isSelected) {
   const x = PADDING + c * CELL_SIZE;
   const y = PADDING + r * CELL_SIZE;
-  const size = CELL_SIZE - 8;
+  const cx = x + CELL_SIZE / 2;
+  const cy = y + CELL_SIZE / 2;
+  const selSize = CELL_SIZE - 4;
+  const tileSize = CELL_SIZE - 12;
   if (isSelected) {
     ctx.shadowColor = '#FFD700';
     ctx.shadowBlur = 12;
-    drawRoundRect(x - 2, y - 2, size + 4, size + 4, 10, null, '#FFD700');
+    drawRoundRect(cx - selSize / 2, cy - selSize / 2, selSize, selSize, 10, null, '#FFD700');
     ctx.shadowBlur = 0;
   }
   const colorIdx = ((value - 1) + TILE_COLORS.length) % TILE_COLORS.length;
   const color = TILE_COLORS[colorIdx] || '#FF6B6B';
-  drawRoundRect(x + 2, y + 2, size - 4, size - 4, 8, color, null);
+  drawRoundRect(cx - tileSize / 2, cy - tileSize / 2, tileSize, tileSize, 8, color, null);
   const symbol = TILE_SYMBOLS[((value - 1) + TILE_SYMBOLS.length) % TILE_SYMBOLS.length] || '?';
   ctx.font = '26px serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#fff';
-  ctx.fillText(symbol, x + CELL_SIZE / 2, y + CELL_SIZE / 2);
+  ctx.fillText(symbol, cx, cy);
 }
 
 function drawBoard() {
   ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-  ctx.fillStyle = '#ff0000';
-  ctx.fillRect(2, 2, 20, 20);
   
-  if (!gameState) {
-    dbg('drawBoard: gameState is null');
-    return;
-  }
-  if (!MB || !MB.get_rows) {
-    dbg('drawBoard: MB functions not available');
-    return;
-  }
+  if (!gameState) return;
+  if (!MB || !MB.get_rows) return;
   
   const rows = MB.get_rows(gameState);
   const cols = MB.get_cols(gameState);
   const selR = MB.get_selected_r(gameState);
   const selC = MB.get_selected_c(gameState);
   
-  dbg('drawBoard: rows=' + rows + ' (' + typeof rows + ') cols=' + cols + ' (' + typeof cols + ')');
-  
-  if (!rows || !cols || rows <= 0 || cols <= 0) {
-    dbg('drawBoard: invalid rows/cols');
-    return;
-  }
-  
-  let drawn = 0;
-  let firstValue = null;
-  let firstValueType = null;
+  if (!rows || !cols || rows <= 0 || cols <= 0) return;
   
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const value = MB.get_board_value(gameState, r, c);
-      if (firstValue === null && r === 0 && c === 0) {
-        firstValue = value;
-        firstValueType = typeof value;
-      }
       if (value != 0 && value != null && value !== false && !isNaN(value)) {
         drawTile(r, c, value, selR === r && selC === c);
-        drawn++;
       }
     }
-  }
-  
-  dbg('drawBoard: drew ' + drawn + ' tiles, firstValue=' + firstValue + ' type=' + firstValueType);
-  
-  if (drawn === 0) {
-    ctx.fillStyle = 'blue';
-    ctx.fillRect(30, 2, 20, 20);
-    dbg('drawBoard: WARNING - zero tiles drawn!');
   }
 }
 
