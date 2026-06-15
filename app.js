@@ -4,28 +4,6 @@ const TILE_TYPES = 16;
 const ROWS = 8;
 const COLS = 10;
 
-const P = '_M0FP111lianliankan';
-const init_game = window[P + '10init__game'];
-const find_path = window[P + '10find__path'];
-const handle_click = window[P + '13handle__click'];
-const is_game_won = window[P + '13is__game__won'];
-const has_valid_moves = window[P + '17has__valid__moves'];
-const shuffle_board = window[P + '14shuffle__board'];
-const get_rows = window[P + '9get__rows'];
-const get_cols = window[P + '9get__cols'];
-const get_matched_pairs = window[P + '19get__matched__pairs'];
-const get_total_pairs = window[P + '17get__total__pairs'];
-const get_board_value = window[P + '17get__board__value'];
-const get_selected_r = window[P + '16get__selected__r'];
-const get_selected_c = window[P + '16get__selected__c'];
-const get_board = window[P + '10get__board'];
-const path_found = window[P + '11path__found'];
-const path_len = window[P + '9path__len'];
-const path_point_x = window[P + '14path__point__x'];
-const path_point_y = window[P + '14path__point__y'];
-const click_get_state = window[P + '17click__get__state'];
-const click_get_path = window[P + '16click__get__path'];
-
 const TILE_COLORS = [
   '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
   '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F',
@@ -39,6 +17,7 @@ const TILE_SYMBOLS = [
 ];
 
 let gameState = null;
+let gameStarted = false;
 
 const gameCanvas = document.getElementById('gameCanvas');
 const overlayCanvas = document.getElementById('overlayCanvas');
@@ -137,14 +116,14 @@ function drawBoard() {
   ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
   if (!gameState) return;
 
-  const rows = get_rows(gameState);
-  const cols = get_cols(gameState);
-  const selR = get_selected_r(gameState);
-  const selC = get_selected_c(gameState);
+  const rows = _M0FP111lianliankan9get__rows(gameState);
+  const cols = _M0FP111lianliankan9get__cols(gameState);
+  const selR = _M0FP111lianliankan16get__selected__r(gameState);
+  const selC = _M0FP111lianliankan16get__selected__c(gameState);
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const value = get_board_value(gameState, r, c);
+      const value = _M0FP111lianliankan17get__board__value(gameState, r, c);
       if (value !== 0) {
         const isSelected = (selR === r && selC === c);
         drawTile(r, c, value, isSelected);
@@ -207,8 +186,8 @@ function drawPathAnimated() {
 
 function updateUI() {
   if (!gameState) return;
-  const matched = get_matched_pairs(gameState);
-  const total = get_total_pairs(gameState);
+  const matched = _M0FP111lianliankan19get__matched__pairs(gameState);
+  const total = _M0FP111lianliankan17get__total__pairs(gameState);
   progressEl.textContent = matched;
   totalEl.textContent = total;
   remainingEl.textContent = total - matched;
@@ -216,7 +195,7 @@ function updateUI() {
 
 function checkWin() {
   if (!gameState) return;
-  const won = is_game_won(gameState);
+  const won = _M0FP111lianliankan13is__game__won(gameState);
   if (won) {
     stopTimer();
     statusMsg.textContent = `🎉 恭喜通关！用时 ${elapsedSeconds} 秒`;
@@ -253,14 +232,21 @@ function resetTimer() {
 }
 
 function newGame() {
-  gameState = init_game(ROWS, COLS, TILE_TYPES);
+  gameState = _M0FP111lianliankan10init__game(ROWS, COLS, TILE_TYPES);
+  gameStarted = false;
   resetTimer();
-  startTimer();
   animatingPath = null;
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
   drawBoard();
   updateUI();
-  setStatus('点击两个相同的图案，连线不超过两个拐点即可消除');
+  setStatus('点击任意图案开始游戏，消除两个相同的图案（连线不超过两个拐点）');
+}
+
+function ensureTimerStarted() {
+  if (!gameStarted) {
+    gameStarted = true;
+    startTimer();
+  }
 }
 
 function handleClick(e) {
@@ -271,36 +257,47 @@ function handleClick(e) {
   const cell = getCellFromPos(x, y);
   if (!cell) return;
 
-  const won = is_game_won(gameState);
+  const won = _M0FP111lianliankan13is__game__won(gameState);
   if (won) return;
 
-  const clickResult = handle_click(gameState, cell.r, cell.c);
-  const newState = click_get_state(clickResult);
-  const pathResult = click_get_path(clickResult);
+  const clickResult = _M0FP111lianliankan13handle__click(gameState, cell.r, cell.c);
+  const newState = _M0FP111lianliankan17click__get__state(clickResult);
+  const pathResult = _M0FP111lianliankan16click__get__path(clickResult);
   gameState = newState;
 
-  const found = path_found(pathResult);
-  drawBoard();
-  updateUI();
+  const found = _M0FP111lianliankan11path__found(pathResult);
 
   if (found) {
-    const len = path_len(pathResult);
+    ensureTimerStarted();
+    const len = _M0FP111lianliankan9path__len(pathResult);
     const pts = [];
     for (let i = 0; i < len; i++) {
-      pts.push({ x: path_point_x(pathResult, i), y: path_point_y(pathResult, i) });
+      pts.push({
+        x: _M0FP111lianliankan14path__point__x(pathResult, i),
+        y: _M0FP111lianliankan14path__point__y(pathResult, i),
+      });
     }
     animatingPath = pts;
     animationStartTime = performance.now();
     requestAnimationFrame(drawPathAnimated);
     setStatus('匹配成功！');
+  } else {
+    const selR = _M0FP111lianliankan16get__selected__r(gameState);
+    if (selR !== -1) {
+      ensureTimerStarted();
+    }
+    setStatus('请选择另一个相同的图案');
   }
+
+  drawBoard();
+  updateUI();
 }
 
 function handleShuffle() {
   if (!gameState) return;
-  const won = is_game_won(gameState);
+  const won = _M0FP111lianliankan13is__game__won(gameState);
   if (won) return;
-  gameState = shuffle_board(gameState);
+  gameState = _M0FP111lianliankan14shuffle__board(gameState);
   drawBoard();
   updateUI();
   setStatus('已重新洗牌');
@@ -308,33 +305,36 @@ function handleShuffle() {
 
 function handleHint() {
   if (!gameState) return;
-  const won = is_game_won(gameState);
+  const won = _M0FP111lianliankan13is__game__won(gameState);
   if (won) return;
 
-  const rows = get_rows(gameState);
-  const cols = get_cols(gameState);
+  const rows = _M0FP111lianliankan9get__rows(gameState);
+  const cols = _M0FP111lianliankan9get__cols(gameState);
   const tiles = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const v = get_board_value(gameState, r, c);
+      const v = _M0FP111lianliankan17get__board__value(gameState, r, c);
       if (v !== 0) tiles.push({ r, c, v });
     }
   }
 
-  const board = get_board(gameState);
+  const board = _M0FP111lianliankan10get__board(gameState);
   for (let i = 0; i < tiles.length; i++) {
     for (let j = i + 1; j < tiles.length; j++) {
       if (tiles[i].v === tiles[j].v) {
-        const pathResult = find_path(
+        const pathResult = _M0FP111lianliankan10find__path(
           board, rows, cols,
           tiles[i].r, tiles[i].c,
           tiles[j].r, tiles[j].c
         );
-        if (path_found(pathResult)) {
-          const len = path_len(pathResult);
+        if (_M0FP111lianliankan11path__found(pathResult)) {
+          const len = _M0FP111lianliankan9path__len(pathResult);
           const pts = [];
           for (let k = 0; k < len; k++) {
-            pts.push({ x: path_point_x(pathResult, k), y: path_point_y(pathResult, k) });
+            pts.push({
+              x: _M0FP111lianliankan14path__point__x(pathResult, k),
+              y: _M0FP111lianliankan14path__point__y(pathResult, k),
+            });
           }
           animatingPath = pts;
           animationStartTime = performance.now();
@@ -346,7 +346,7 @@ function handleHint() {
     }
   }
 
-  const hasMove = has_valid_moves(gameState);
+  const hasMove = _M0FP111lianliankan17has__valid__moves(gameState);
   if (!hasMove) {
     setStatus('没有可消除的配对了，请点击洗牌！', 'warn');
   } else {
@@ -355,8 +355,18 @@ function handleHint() {
 }
 
 function initGame() {
-  document.getElementById('loading').classList.add('hidden');
-  document.getElementById('game').classList.remove('hidden');
+  initCanvas();
+
+  const loading = document.getElementById('loading');
+  const game = document.getElementById('game');
+
+  if (typeof _M0FP111lianliankan10init__game !== 'function') {
+    loading.innerHTML = '<h1>❌ 加载失败</h1><p style="margin-top:16px;color:#e53e3e;">MoonBit 游戏逻辑模块未正确加载</p>';
+    return;
+  }
+
+  loading.classList.add('hidden');
+  game.classList.remove('hidden');
 
   gameCanvas.addEventListener('click', handleClick);
   document.getElementById('btnNew').addEventListener('click', newGame);
@@ -366,7 +376,8 @@ function initGame() {
   newGame();
 }
 
-window.addEventListener('load', () => {
-  initCanvas();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initGame);
+} else {
   initGame();
-});
+}
