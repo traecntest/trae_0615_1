@@ -180,7 +180,49 @@
     <div class="status-msg" id="statusMsg">点击两个相同的图案，连线不超过两个拐点即可消除</div>
   </div>
 
-<script src="_build/js/debug/build/lianliankan.js"></script>
-<script src="app.js"></script>
+<script src="_build/js/debug/build/lianliankan.js?v=20250615"></script>
+<script>
+(function() {
+  var P = '_M0FP111lianliankan';
+  var map = {
+    init_game: P + '10init__game',
+    find_path: P + '10find__path',
+    handle_click: P + '13handle__click',
+    is_game_won: P + '13is__game__won',
+    has_valid_moves: P + '17has__valid__moves',
+    shuffle_board: P + '14shuffle__board',
+    get_rows: P + '9get__rows',
+    get_cols: P + '9get__cols',
+    get_matched_pairs: P + '19get__matched__pairs',
+    get_total_pairs: P + '17get__total__pairs',
+    get_board_value: P + '17get__board__value',
+    get_selected_r: P + '16get__selected__r',
+    get_selected_c: P + '16get__selected__c',
+    get_board: P + '10get__board',
+    path_found: P + '11path__found',
+    path_len: P + '9path__len',
+    path_point_x: P + '14path__point__x',
+    path_point_y: P + '14path__point__y',
+    click_get_state: P + '17click__get__state',
+    click_get_path: P + '16click__get__path'
+  };
+  window.LLK = {};
+  var ok = 0, fail = 0, failNames = [];
+  for (var k in map) {
+    var fn = null;
+    try { fn = window[map[k]]; } catch(e) {}
+    if (!fn) {
+      try { fn = eval(map[k]); } catch(e) {}
+    }
+    if (fn) { window.LLK[k] = fn; ok++; }
+    else { fail++; failNames.push(k); console.error('LLK missing:', k, map[k]); }
+  }
+  console.log('LLK bridge: ' + ok + ' OK, ' + fail + ' missing');
+  if (fail > 0) {
+    window.__llkError = 'Missing: ' + failNames.join(', ');
+  }
+})();
+</script>
+<script src="app.js?v=20250615"></script>
 </body>
 </html>

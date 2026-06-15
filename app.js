@@ -1,3 +1,5 @@
+var MB = window.LLK || {};
+
 const CELL_SIZE = 56;
 const PADDING = 12;
 const TILE_TYPES = 16;
@@ -78,32 +80,22 @@ function drawRoundRect(x, y, w, h, r, fill, stroke) {
   ctx.lineTo(x, y + r);
   ctx.quadraticCurveTo(x, y, x + r, y);
   ctx.closePath();
-  if (fill) {
-    ctx.fillStyle = fill;
-    ctx.fill();
-  }
-  if (stroke) {
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
 }
 
 function drawTile(r, c, value, isSelected) {
   const x = PADDING + c * CELL_SIZE;
   const y = PADDING + r * CELL_SIZE;
   const size = CELL_SIZE - 8;
-
   if (isSelected) {
     drawRoundRect(x - 2, y - 2, size + 4, size + 4, 10, null, '#FFD700');
     ctx.shadowColor = '#FFD700';
     ctx.shadowBlur = 12;
   }
-
   const colorIdx = (value - 1) % TILE_COLORS.length;
   drawRoundRect(x + 2, y + 2, size - 4, size - 4, 8, TILE_COLORS[colorIdx], null);
   ctx.shadowBlur = 0;
-
   const symbol = TILE_SYMBOLS[(value - 1) % TILE_SYMBOLS.length];
   ctx.font = '26px serif';
   ctx.textAlign = 'center';
@@ -115,18 +107,15 @@ function drawTile(r, c, value, isSelected) {
 function drawBoard() {
   ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
   if (!gameState) return;
-
-  const rows = _M0FP111lianliankan9get__rows(gameState);
-  const cols = _M0FP111lianliankan9get__cols(gameState);
-  const selR = _M0FP111lianliankan16get__selected__r(gameState);
-  const selC = _M0FP111lianliankan16get__selected__c(gameState);
-
+  const rows = MB.get_rows(gameState);
+  const cols = MB.get_cols(gameState);
+  const selR = MB.get_selected_r(gameState);
+  const selC = MB.get_selected_c(gameState);
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const value = _M0FP111lianliankan17get__board__value(gameState, r, c);
+      const value = MB.get_board_value(gameState, r, c);
       if (value !== 0) {
-        const isSelected = (selR === r && selC === c);
-        drawTile(r, c, value, isSelected);
+        drawTile(r, c, value, selR === r && selC === c);
       }
     }
   }
@@ -135,43 +124,33 @@ function drawBoard() {
 function drawPathAnimated() {
   if (!animatingPath) return;
   overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-
   const elapsed = (performance.now() - animationStartTime) / 400;
   const t = Math.min(elapsed, 1);
   const points = animatingPath;
-
   const totalSegments = points.length - 1;
   const progress = t * totalSegments;
   const fullSegments = Math.floor(progress);
   const partial = progress - fullSegments;
-
   overlayCtx.strokeStyle = '#FF4444';
   overlayCtx.lineWidth = 4;
   overlayCtx.lineCap = 'round';
   overlayCtx.lineJoin = 'round';
   overlayCtx.shadowColor = '#FF4444';
   overlayCtx.shadowBlur = 8;
-
   overlayCtx.beginPath();
   const p0 = cellCenter(points[0].y, points[0].x);
   overlayCtx.moveTo(p0.x, p0.y);
-
   for (let i = 0; i < fullSegments && i < totalSegments; i++) {
     const p = cellCenter(points[i + 1].y, points[i + 1].x);
     overlayCtx.lineTo(p.x, p.y);
   }
-
   if (fullSegments < totalSegments) {
     const start = cellCenter(points[fullSegments].y, points[fullSegments].x);
     const end = cellCenter(points[fullSegments + 1].y, points[fullSegments + 1].x);
-    const cx = start.x + (end.x - start.x) * partial;
-    const cy = start.y + (end.y - start.y) * partial;
-    overlayCtx.lineTo(cx, cy);
+    overlayCtx.lineTo(start.x + (end.x - start.x) * partial, start.y + (end.y - start.y) * partial);
   }
-
   overlayCtx.stroke();
   overlayCtx.shadowBlur = 0;
-
   if (t >= 1) {
     setTimeout(() => {
       animatingPath = null;
@@ -186,8 +165,8 @@ function drawPathAnimated() {
 
 function updateUI() {
   if (!gameState) return;
-  const matched = _M0FP111lianliankan19get__matched__pairs(gameState);
-  const total = _M0FP111lianliankan17get__total__pairs(gameState);
+  const matched = MB.get_matched_pairs(gameState);
+  const total = MB.get_total_pairs(gameState);
   progressEl.textContent = matched;
   totalEl.textContent = total;
   remainingEl.textContent = total - matched;
@@ -195,10 +174,9 @@ function updateUI() {
 
 function checkWin() {
   if (!gameState) return;
-  const won = _M0FP111lianliankan13is__game__won(gameState);
-  if (won) {
+  if (MB.is_game_won(gameState)) {
     stopTimer();
-    statusMsg.textContent = `🎉 恭喜通关！用时 ${elapsedSeconds} 秒`;
+    statusMsg.textContent = '🎉 恭喜通关！用时 ' + elapsedSeconds + ' 秒';
     statusMsg.className = 'status-msg win';
   }
 }
@@ -219,10 +197,7 @@ function startTimer() {
 }
 
 function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 }
 
 function resetTimer() {
@@ -232,7 +207,7 @@ function resetTimer() {
 }
 
 function newGame() {
-  gameState = _M0FP111lianliankan10init__game(ROWS, COLS, TILE_TYPES);
+  gameState = MB.init_game(ROWS, COLS, TILE_TYPES);
   gameStarted = false;
   resetTimer();
   animatingPath = null;
@@ -243,111 +218,81 @@ function newGame() {
 }
 
 function ensureTimerStarted() {
-  if (!gameStarted) {
-    gameStarted = true;
-    startTimer();
-  }
+  if (!gameStarted) { gameStarted = true; startTimer(); }
 }
 
 function handleClick(e) {
   if (!gameState || animatingPath) return;
   const rect = gameCanvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  const cell = getCellFromPos(x, y);
+  const cell = getCellFromPos(e.clientX - rect.left, e.clientY - rect.top);
   if (!cell) return;
+  if (MB.is_game_won(gameState)) return;
 
-  const won = _M0FP111lianliankan13is__game__won(gameState);
-  if (won) return;
-
-  const clickResult = _M0FP111lianliankan13handle__click(gameState, cell.r, cell.c);
-  const newState = _M0FP111lianliankan17click__get__state(clickResult);
-  const pathResult = _M0FP111lianliankan16click__get__path(clickResult);
+  const clickResult = MB.handle_click(gameState, cell.r, cell.c);
+  const newState = MB.click_get_state(clickResult);
+  const pathResult = MB.click_get_path(clickResult);
   gameState = newState;
-
-  const found = _M0FP111lianliankan11path__found(pathResult);
+  const found = MB.path_found(pathResult);
 
   if (found) {
     ensureTimerStarted();
-    const len = _M0FP111lianliankan9path__len(pathResult);
+    const len = MB.path_len(pathResult);
     const pts = [];
     for (let i = 0; i < len; i++) {
-      pts.push({
-        x: _M0FP111lianliankan14path__point__x(pathResult, i),
-        y: _M0FP111lianliankan14path__point__y(pathResult, i),
-      });
+      pts.push({ x: MB.path_point_x(pathResult, i), y: MB.path_point_y(pathResult, i) });
     }
     animatingPath = pts;
     animationStartTime = performance.now();
     requestAnimationFrame(drawPathAnimated);
     setStatus('匹配成功！');
   } else {
-    const selR = _M0FP111lianliankan16get__selected__r(gameState);
-    if (selR !== -1) {
-      ensureTimerStarted();
-    }
+    if (MB.get_selected_r(gameState) !== -1) ensureTimerStarted();
     setStatus('请选择另一个相同的图案');
   }
-
   drawBoard();
   updateUI();
 }
 
 function handleShuffle() {
-  if (!gameState) return;
-  const won = _M0FP111lianliankan13is__game__won(gameState);
-  if (won) return;
-  gameState = _M0FP111lianliankan14shuffle__board(gameState);
+  if (!gameState || MB.is_game_won(gameState)) return;
+  gameState = MB.shuffle_board(gameState);
   drawBoard();
   updateUI();
   setStatus('已重新洗牌');
 }
 
 function handleHint() {
-  if (!gameState) return;
-  const won = _M0FP111lianliankan13is__game__won(gameState);
-  if (won) return;
-
-  const rows = _M0FP111lianliankan9get__rows(gameState);
-  const cols = _M0FP111lianliankan9get__cols(gameState);
+  if (!gameState || MB.is_game_won(gameState)) return;
+  const rows = MB.get_rows(gameState);
+  const cols = MB.get_cols(gameState);
   const tiles = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const v = _M0FP111lianliankan17get__board__value(gameState, r, c);
+      const v = MB.get_board_value(gameState, r, c);
       if (v !== 0) tiles.push({ r, c, v });
     }
   }
-
-  const board = _M0FP111lianliankan10get__board(gameState);
+  const board = MB.get_board(gameState);
   for (let i = 0; i < tiles.length; i++) {
     for (let j = i + 1; j < tiles.length; j++) {
       if (tiles[i].v === tiles[j].v) {
-        const pathResult = _M0FP111lianliankan10find__path(
-          board, rows, cols,
-          tiles[i].r, tiles[i].c,
-          tiles[j].r, tiles[j].c
-        );
-        if (_M0FP111lianliankan11path__found(pathResult)) {
-          const len = _M0FP111lianliankan9path__len(pathResult);
+        const pathResult = MB.find_path(board, rows, cols, tiles[i].r, tiles[i].c, tiles[j].r, tiles[j].c);
+        if (MB.path_found(pathResult)) {
+          const len = MB.path_len(pathResult);
           const pts = [];
           for (let k = 0; k < len; k++) {
-            pts.push({
-              x: _M0FP111lianliankan14path__point__x(pathResult, k),
-              y: _M0FP111lianliankan14path__point__y(pathResult, k),
-            });
+            pts.push({ x: MB.path_point_x(pathResult, k), y: MB.path_point_y(pathResult, k) });
           }
           animatingPath = pts;
           animationStartTime = performance.now();
           requestAnimationFrame(drawPathAnimated);
-          setStatus(`提示: 位置 (${tiles[i].r + 1},${tiles[i].c + 1}) 和 (${tiles[j].r + 1},${tiles[j].c + 1}) 可消除`);
+          setStatus('提示: 位置 (' + (tiles[i].r+1) + ',' + (tiles[i].c+1) + ') 和 (' + (tiles[j].r+1) + ',' + (tiles[j].c+1) + ') 可消除');
           return;
         }
       }
     }
   }
-
-  const hasMove = _M0FP111lianliankan17has__valid__moves(gameState);
-  if (!hasMove) {
+  if (!MB.has_valid_moves(gameState)) {
     setStatus('没有可消除的配对了，请点击洗牌！', 'warn');
   } else {
     setStatus('正在寻找提示...');
@@ -356,28 +301,36 @@ function handleHint() {
 
 function initGame() {
   initCanvas();
-
   const loading = document.getElementById('loading');
   const game = document.getElementById('game');
 
-  if (typeof _M0FP111lianliankan10init__game !== 'function') {
-    loading.innerHTML = '<h1>❌ 加载失败</h1><p style="margin-top:16px;color:#e53e3e;">MoonBit 游戏逻辑模块未正确加载</p>';
+  var missing = [];
+  for (var k in MB) { if (!MB[k]) missing.push(k); }
+  if (missing.length > 0 || !MB.init_game) {
+    var errInfo = window.__llkError || '';
+    var allKeys = Object.keys(window).filter(function(k) { return k.indexOf('_M0FP111lianliankan') === 0; });
+    loading.innerHTML = '<h1>❌ 加载失败</h1>' +
+      '<p style="margin-top:16px;color:#e53e3e;">MoonBit函数未加载 (' + missing.length + ' missing)</p>' +
+      '<p style="margin-top:8px;color:#718096;">Bridge error: ' + errInfo + '</p>' +
+      '<p style="margin-top:8px;color:#718096;">window上的MoonBit函数: ' + allKeys.length + ' 个</p>' +
+      '<p style="margin-top:4px;color:#718096;font-size:12px;">' + allKeys.slice(0, 5).join(', ') + (allKeys.length > 5 ? '...' : '') + '</p>';
     return;
   }
 
   loading.classList.add('hidden');
   game.classList.remove('hidden');
-
   gameCanvas.addEventListener('click', handleClick);
   document.getElementById('btnNew').addEventListener('click', newGame);
   document.getElementById('btnShuffle').addEventListener('click', handleShuffle);
   document.getElementById('btnHint').addEventListener('click', handleHint);
 
-  newGame();
+  try {
+    newGame();
+  } catch (e) {
+    loading.classList.remove('hidden');
+    game.classList.add('hidden');
+    loading.innerHTML = '<h1>❌ 初始化错误</h1><p style="margin-top:16px;color:#e53e3e;">' + e.message + '</p><pre style="margin-top:8px;font-size:12px;overflow:auto;max-height:200px;">' + e.stack + '</pre>';
+  }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initGame);
-} else {
-  initGame();
-}
+initGame();
