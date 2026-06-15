@@ -1,0 +1,10 @@
+{
+  "import": [],
+  "is_main": true,
+  "target_backend": "js",
+  "link": {
+    "js": {
+      "format": "esm"
+    }
+  }
+}
